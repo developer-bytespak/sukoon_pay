@@ -33,5 +33,5 @@ Full walkthrough from scratch: Landing → *Try the demo store* → Bazaar.pk �
 ## Structure
 
 - `src/engine/` — the simulated backend: state machine transitions, tiered Wakala fees, double-entry ledger, demo clock, scenario seeds, Zustand store
-- `src/pages/` — the nine surfaces: Landing, Login/Signup, Bazaar.pk storefront, Sukoon checkout, Buyer view, Seller dashboard, Courier ops panel, Admin/Escrow console, Sharia panel
+- `src/pages/` — Landing (with the Sharia section at `/#sharia`), split-screen Auth for login/signup, Bazaar.pk storefront, Sukoon checkout, Buyer view, Seller dashboard, Courier ops panel, Admin/Escrow console
 - `src/components/` — demo controls bar, state-machine diagram, animated ledger table, timeline, fee breakdown

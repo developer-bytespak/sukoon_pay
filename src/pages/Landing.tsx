@@ -33,7 +33,7 @@ function Nav() {
         <nav className="hidden items-center gap-7 text-sm font-medium text-white/60 md:flex">
           <a href="#how" className="transition hover:text-white">How it works</a>
           <a href="#why" className="transition hover:text-white">Why escrow</a>
-          <Link to="/sharia" className="transition hover:text-white">Sharia &amp; fees</Link>
+          <a href="/#sharia" className="transition hover:text-white">Sharia &amp; fees</a>
         </nav>
         <div className="flex items-center gap-2">
           <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 hover:text-white">
@@ -437,12 +437,9 @@ function Sharia() {
               Buyer protection here is <span className="text-emerald-400">not insurance</span>. We return your own money
               from trust. No premium, no pool, no risk transfer.
             </p>
-            <Link
-              to="/sharia"
-              className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-emerald-400 transition hover:text-emerald-300"
-            >
-              Read the full structure &amp; fee schedule <ArrowRight size={15} />
-            </Link>
+            <p className="mt-5 text-sm font-semibold text-emerald-400">
+              Wakala fee schedule: PKR 25 up to 5,000 · PKR 75 to 25,000 · PKR 200 to 100,000 · capped at PKR 400
+            </p>
           </div>
         </FadeIn>
       </div>
@@ -503,7 +500,7 @@ function Footer() {
         </div>
         <nav className="flex items-center gap-6 text-xs font-medium text-white/40">
           <a href="#how" className="transition hover:text-white/80">How it works</a>
-          <Link to="/sharia" className="transition hover:text-white/80">Sharia &amp; fees</Link>
+          <a href="/#sharia" className="transition hover:text-white/80">Sharia &amp; fees</a>
           <Link to="/bazaar" className="transition hover:text-white/80">Demo store</Link>
           <Link to="/login" className="transition hover:text-white/80">Log in</Link>
         </nav>

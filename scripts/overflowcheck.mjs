@@ -7,7 +7,7 @@ for (const [name, viewport] of [
   ["mobile", { width: 390, height: 844 }],
 ]) {
   const page = await browser.newPage({ viewport });
-  for (const path of ["/login", "/signup", "/", "/bazaar", "/buyer", "/seller", "/courier", "/admin", "/sharia"]) {
+  for (const path of ["/login", "/signup", "/", "/bazaar", "/buyer", "/seller", "/courier", "/admin"]) {
     await page.goto(`http://localhost:5174${path}`);
     await page.waitForTimeout(500);
     const overflow = await page.evaluate(

@@ -93,12 +93,13 @@ await page.getByRole("button", { name: /Approve as Hamza/ }).click();
 await page.getByText(/Resolved: refunded to buyer/).waitFor();
 await shot("admin-four-eyes-refunded");
 
-// 10. Sharia panel
-await page.goto(`${BASE}/sharia`);
-await page.getByText("Buyer protection is NOT insurance").waitFor();
-await shot("sharia-panel");
+// 10. Sharia section on the landing page (reached via the #sharia anchor)
+await page.goto(`${BASE}/#sharia`);
+await page.getByText("not insurance").first().waitFor();
+await shot("sharia-section");
 
-// 11. Scenario 6: suspicious proof → flagged & held
+// 11. Scenario 6: suspicious proof → flagged & held (leave the landing page first; it has no demo bar)
+await page.goto(`${BASE}/courier`);
 await demoBar().locator("select").selectOption("6");
 await demoBar().getByRole("button", { name: "Courier", exact: true }).click();
 await page.getByRole("button", { name: /GPS match: ON/ }).click();

@@ -8,7 +8,6 @@ import BuyerView from "./pages/BuyerView";
 import SellerDashboard from "./pages/SellerDashboard";
 import CourierPanel from "./pages/CourierPanel";
 import AdminConsole from "./pages/AdminConsole";
-import ShariaPanel from "./pages/ShariaPanel";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -25,7 +24,6 @@ export default function App() {
         <Route path="/seller" element={<SellerDashboard />} />
         <Route path="/courier" element={<CourierPanel />} />
         <Route path="/admin" element={<AdminConsole />} />
-        <Route path="/sharia" element={<ShariaPanel />} />
       </Routes>
       <DemoControls />
     </div>
