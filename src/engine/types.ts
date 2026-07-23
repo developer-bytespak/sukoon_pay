@@ -93,4 +93,46 @@ export interface PendingCheckout {
   productImage: string;
   amount: number;
   size: string | null;
+  cartId?: string | null; // set when the buyer came from an "added to cart" state, so paying recovers the cart
+}
+
+/* ------------------------- webhook simulation ------------------------- */
+
+export type StorePlatform = "shopify" | "woocommerce" | "custom";
+export type WebhookType = "payment" | "carts";
+
+export interface WebhookConfig {
+  connected: boolean;
+  platform: StorePlatform | null;
+  endpoint: string;
+  secret: string;
+  connectedAt: number | null;
+}
+
+export interface CartItem {
+  name: string;
+  image: string;
+  qty: number;
+  price: number;
+}
+
+export interface PendingCart {
+  id: string; // "CART-1042"
+  customerMasked: string; // "aye***@gmail.com"
+  items: CartItem[];
+  value: number;
+  createdAt: number;
+  status: "open" | "nudged" | "recovered";
+}
+
+export interface WebhookEvent {
+  id: string; // "evt_00017"
+  type: WebhookType;
+  topic: string; // platform topic, e.g. "orders/paid" | "order.created" | "cart.abandoned"
+  platform: StorePlatform;
+  payload: Record<string, unknown>;
+  signature: string; // fake HMAC, "sha256=..."
+  deliveredAt: number;
+  test: boolean;
+  status: "delivered" | "skipped_not_connected";
 }

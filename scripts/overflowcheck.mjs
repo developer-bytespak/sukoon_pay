@@ -1,20 +1,40 @@
 import { chromium } from "playwright";
 
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/bazaar",
+  "/buyer-dashboard/login",
+  "/seller-dashboard/login",
+  "/courier-dashboard/login",
+  "/admin-dashboard/login",
+];
+const DASHBOARDS = ["buyer", "seller", "courier", "admin"];
+
 const browser = await chromium.launch({ channel: "msedge", headless: true });
-// same squat window as the user's screenshot, plus mobile
+
 for (const [name, viewport] of [
   ["squat", { width: 1280, height: 552 }],
   ["mobile", { width: 390, height: 844 }],
 ]) {
   const page = await browser.newPage({ viewport });
-  for (const path of ["/login", "/signup", "/", "/bazaar", "/buyer", "/seller", "/courier", "/admin"]) {
-    await page.goto(`http://localhost:5174${path}`);
-    await page.waitForTimeout(500);
+  const measure = async (label) => {
+    await page.waitForTimeout(450);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth
     );
-    if (overflow > 0) console.log(`✗ ${name} ${path}: ${overflow}px horizontal overflow`);
-    else console.log(`✓ ${name} ${path}`);
+    console.log(overflow > 0 ? `✗ ${name} ${label}: ${overflow}px horizontal overflow` : `✓ ${name} ${label}`);
+  };
+  for (const path of PUBLIC_PATHS) {
+    await page.goto(`http://localhost:5173${path}`);
+    await measure(path);
+  }
+  // dashboards sit behind the role guard: quick-login through each auth page first
+  for (const role of DASHBOARDS) {
+    await page.goto(`http://localhost:5173/${role}-dashboard/login`);
+    await page.getByTestId("quick-demo-login").click();
+    await page.waitForURL(`**/${role}-dashboard`);
+    await measure(`/${role}-dashboard`);
   }
   await page.close();
 }

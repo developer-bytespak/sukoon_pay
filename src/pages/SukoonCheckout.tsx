@@ -30,7 +30,7 @@ export default function SukoonCheckout() {
   const confirmPay = () => {
     login("buyer");
     pay();
-    navigate("/buyer");
+    navigate("/buyer-dashboard");
   };
 
   return (

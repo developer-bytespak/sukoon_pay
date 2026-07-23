@@ -4,12 +4,15 @@ import {
   ArrowRight,
   BadgeCheck,
   CreditCard,
+  Globe,
   Landmark,
   Lock,
   MapPin,
   PackageCheck,
+  Plug,
   Scale,
   ShieldCheck,
+  ShoppingCart,
   Store,
   Zap,
 } from "lucide-react";
@@ -34,6 +37,7 @@ function Nav() {
           <a href="#how" className="transition hover:text-white">How it works</a>
           <a href="#why" className="transition hover:text-white">Why escrow</a>
           <a href="/#sharia" className="transition hover:text-white">Sharia &amp; fees</a>
+          <a href="/#integrations" className="transition hover:text-white">Integrations</a>
         </nav>
         <div className="flex items-center gap-2">
           <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 hover:text-white">
@@ -447,6 +451,88 @@ function Sharia() {
   );
 }
 
+/* ------------------------------------------------------ integrations */
+
+const PLATFORMS = [
+  {
+    icon: Store,
+    name: "Shopify",
+    how: "Subscribe our endpoint to your store's webhook topics from the admin or the API. Deliveries arrive HMAC-signed.",
+    topics: ["orders/paid", "checkouts/update"],
+  },
+  {
+    icon: Globe,
+    name: "WordPress · WooCommerce",
+    how: "Built-in webhooks: add our delivery URL and secret under Settings → Advanced → Webhooks. Cart recovery plugs in the same way.",
+    topics: ["order.created", "cart.abandoned"],
+  },
+  {
+    icon: Plug,
+    name: "Custom stores",
+    how: "One signed HTTPS POST per event. Verify the X-Sukoon-Signature header with your secret and you are live.",
+    topics: ["payment.succeeded", "cart.pending"],
+  },
+];
+
+function Integrations() {
+  return (
+    <section id="integrations" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-28">
+      <FadeIn>
+        <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400">Plug in your store</p>
+        <h2 className="mt-3 max-w-2xl font-display text-4xl font-bold text-white">
+          Live on your store <span className="text-white/40">in minutes, not migrations.</span>
+        </h2>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/50">
+          Two webhooks carry the whole integration: a <span className="font-semibold text-white">checkout payment webhook</span>{" "}
+          that lands every Sukoon Pay order in escrow instantly, and a{" "}
+          <span className="font-semibold text-white">pending carts webhook</span> that streams abandoned checkouts straight
+          into your seller dashboard so you can recover the sale.
+        </p>
+      </FadeIn>
+
+      <div className="mt-10 grid gap-4 md:grid-cols-3">
+        {PLATFORMS.map((p, i) => (
+          <FadeIn key={p.name} delay={i * 0.08}>
+            <div className="flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition duration-300 hover:border-emerald-400/30 hover:bg-white/[0.06]">
+              <p.icon size={20} className="text-emerald-400" />
+              <h3 className="mt-3 font-display text-lg font-bold text-white">{p.name}</h3>
+              <p className="mt-1.5 flex-1 text-sm leading-relaxed text-white/45">{p.how}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {p.topics.map((t) => (
+                  <code key={t} className="rounded-md bg-black/30 px-2 py-1 font-mono text-[10px] text-emerald-300/80">
+                    {t}
+                  </code>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        ))}
+      </div>
+
+      <FadeIn delay={0.15}>
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-400">
+              <ShoppingCart size={18} />
+            </span>
+            <p className="max-w-md text-sm text-white/60">
+              Try it live: connect the webhooks in the seller dashboard, then abandon a cart on the demo store and watch it
+              arrive.
+            </p>
+          </div>
+          <Link
+            to="/seller-dashboard/login"
+            className="group flex items-center gap-2 rounded-2xl bg-emerald-500 px-6 py-3 font-bold text-stone-950 shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400"
+          >
+            Connect your store
+            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
+      </FadeIn>
+    </section>
+  );
+}
+
 /* --------------------------------------------------------- final CTA */
 
 function FinalCta() {
@@ -501,6 +587,7 @@ function Footer() {
         <nav className="flex items-center gap-6 text-xs font-medium text-white/40">
           <a href="#how" className="transition hover:text-white/80">How it works</a>
           <a href="/#sharia" className="transition hover:text-white/80">Sharia &amp; fees</a>
+          <a href="/#integrations" className="transition hover:text-white/80">Integrations</a>
           <Link to="/bazaar" className="transition hover:text-white/80">Demo store</Link>
           <Link to="/login" className="transition hover:text-white/80">Log in</Link>
         </nav>
@@ -521,6 +608,7 @@ export default function Landing() {
       <Stats />
       <Bento />
       <Sharia />
+      <Integrations />
       <FinalCta />
       <Footer />
     </div>

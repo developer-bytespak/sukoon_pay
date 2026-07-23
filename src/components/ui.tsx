@@ -2,28 +2,32 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { OrderState } from "../engine/types";
 
-export const STATE_META: Record<OrderState, { label: string; classes: string }> = {
-  CREATED: { label: "Created", classes: "bg-stone-100 text-stone-600 border-stone-300" },
-  HELD_IN_ESCROW: { label: "In Escrow — pending", classes: "bg-amber-50 text-amber-700 border-amber-300" },
-  SHIPPED: { label: "Shipped", classes: "bg-sky-50 text-sky-700 border-sky-300" },
-  INSPECTION_WINDOW: { label: "Inspection window", classes: "bg-violet-50 text-violet-700 border-violet-300" },
-  DISPUTED: { label: "Disputed — frozen", classes: "bg-rose-50 text-rose-700 border-rose-300" },
-  RELEASED: { label: "Released", classes: "bg-emerald-50 text-emerald-700 border-emerald-300" },
-  REFUNDED: { label: "Refunded", classes: "bg-orange-50 text-orange-700 border-orange-300" },
-  AUTO_REFUNDED: { label: "Auto-refunded", classes: "bg-orange-50 text-orange-700 border-orange-300" },
-  CANCELLED: { label: "Cancelled", classes: "bg-stone-100 text-stone-500 border-stone-300" },
+export type Tone = "light" | "dark";
+
+export const STATE_META: Record<OrderState, { label: string; classes: string; darkClasses: string }> = {
+  CREATED: { label: "Created", classes: "bg-stone-100 text-stone-600 border-stone-300", darkClasses: "bg-white/5 text-white/50 border-white/15" },
+  HELD_IN_ESCROW: { label: "In Escrow · pending", classes: "bg-amber-50 text-amber-700 border-amber-300", darkClasses: "bg-amber-400/10 text-amber-300 border-amber-400/30" },
+  SHIPPED: { label: "Shipped", classes: "bg-sky-50 text-sky-700 border-sky-300", darkClasses: "bg-sky-400/10 text-sky-300 border-sky-400/30" },
+  INSPECTION_WINDOW: { label: "Inspection window", classes: "bg-violet-50 text-violet-700 border-violet-300", darkClasses: "bg-violet-400/10 text-violet-300 border-violet-400/30" },
+  DISPUTED: { label: "Disputed · frozen", classes: "bg-rose-50 text-rose-700 border-rose-300", darkClasses: "bg-rose-400/10 text-rose-300 border-rose-400/30" },
+  RELEASED: { label: "Released", classes: "bg-emerald-50 text-emerald-700 border-emerald-300", darkClasses: "bg-emerald-400/10 text-emerald-300 border-emerald-400/30" },
+  REFUNDED: { label: "Refunded", classes: "bg-orange-50 text-orange-700 border-orange-300", darkClasses: "bg-orange-400/10 text-orange-300 border-orange-400/30" },
+  AUTO_REFUNDED: { label: "Auto-refunded", classes: "bg-orange-50 text-orange-700 border-orange-300", darkClasses: "bg-orange-400/10 text-orange-300 border-orange-400/30" },
+  CANCELLED: { label: "Cancelled", classes: "bg-stone-100 text-stone-500 border-stone-300", darkClasses: "bg-white/5 text-white/40 border-white/15" },
 };
 
-export function StatePill({ state, flagged }: { state: OrderState; flagged?: boolean }) {
+export function StatePill({ state, flagged, tone = "light" }: { state: OrderState; flagged?: boolean; tone?: Tone }) {
   const meta = STATE_META[state];
+  const flagCls =
+    tone === "dark"
+      ? "border-rose-400/30 bg-rose-400/10 text-rose-300"
+      : "border-rose-300 bg-rose-50 text-rose-700";
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${meta.classes}`}>{meta.label}</span>
-      {flagged && (
-        <span className="rounded-full border border-rose-300 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
-          ⚠ Held for review
-        </span>
-      )}
+      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${tone === "dark" ? meta.darkClasses : meta.classes}`}>
+        {meta.label}
+      </span>
+      {flagged && <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${flagCls}`}>⚠ Held for review</span>}
     </span>
   );
 }

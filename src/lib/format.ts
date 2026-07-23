@@ -8,6 +8,12 @@ export function formatSimDate(ms: number): string {
   });
 }
 
+export function agoLabel(ms: number): string {
+  if (ms < 3_600_000) return `${Math.max(1, Math.round(ms / 60_000))}m ago`;
+  if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)}h ago`;
+  return `${Math.round(ms / 86_400_000)}d ago`;
+}
+
 export function remainingLabel(endsAt: number, clock: number): string {
   const ms = endsAt - clock;
   if (ms <= 0) return "expired";

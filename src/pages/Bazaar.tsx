@@ -1,19 +1,27 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Banknote, ShieldCheck, ShoppingCart, Star } from "lucide-react";
+import { Banknote, Check, ShieldCheck, ShoppingCart, Star } from "lucide-react";
 import { useStore } from "../engine/store";
 import { PRODUCT } from "../engine/constants";
 import { formatPKR } from "../engine/fees";
 
 export default function Bazaar() {
   const navigate = useNavigate();
-  const startCheckout = useStore((s) => s.startCheckout);
+  const { startCheckout, addToCart, activeCartId } = useStore();
   const [size, setSize] = useState<string>("42");
   const [codNote, setCodNote] = useState(false);
+  const cartId = activeCartId ?? null;
+
+  const draft = () => ({ productName: PRODUCT.name, productImage: PRODUCT.image, amount: PRODUCT.price, size });
 
   const paySukoon = () => {
-    startCheckout({ productName: PRODUCT.name, productImage: PRODUCT.image, amount: PRODUCT.price, size });
+    startCheckout({ ...draft(), cartId });
     navigate("/checkout");
+  };
+
+  const handleAddToCart = () => {
+    if (cartId) return;
+    addToCart(draft());
   };
 
   return (
@@ -64,7 +72,26 @@ export default function Bazaar() {
             </div>
           </div>
 
-          <div className="mt-8 space-y-3">
+          <div className="mt-6">
+            <button
+              onClick={handleAddToCart}
+              className={`flex w-full items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-bold transition ${
+                cartId
+                  ? "border-orange-300 bg-orange-100 text-orange-700"
+                  : "border-orange-400 bg-white text-orange-600 hover:bg-orange-50"
+              }`}
+            >
+              {cartId ? <Check size={16} /> : <ShoppingCart size={16} />}
+              {cartId ? `Saved to cart (${cartId})` : "Add to cart"}
+            </button>
+            {cartId && (
+              <p className="mt-1.5 text-center text-[11px] text-stone-400">
+                In your cart. Leave the page and it becomes a pending cart in the seller&apos;s Sukoon Pay dashboard.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 space-y-3">
             <p className="text-sm font-semibold text-stone-600">Choose how to pay</p>
 
             <button

@@ -104,5 +104,60 @@ console.log("Scenario 6 — suspicious proof held, then adjudicated");
   check("admin accept opens window", o.state === "INSPECTION_WINDOW" && !o.courier.flaggedForReview);
 }
 
+console.log("Webhook simulation — store-level flows");
+{
+  // the store persists via localStorage; shim it for Node
+  if (typeof globalThis.localStorage === "undefined") {
+    const mem = new Map<string, string>();
+    (globalThis as Record<string, unknown>).localStorage = {
+      getItem: (k: string) => mem.get(k) ?? null,
+      setItem: (k: string, v: string) => void mem.set(k, String(v)),
+      removeItem: (k: string) => void mem.delete(k),
+      clear: () => mem.clear(),
+      key: (i: number) => [...mem.keys()][i] ?? null,
+      get length() { return mem.size; },
+    };
+  }
+  const { useStore } = await import("../src/engine/store");
+  const S = () => useStore.getState();
+  S().resetDemo();
+
+  check("integrations start disconnected", !S().integrations.payment.connected && !S().integrations.carts.connected);
+
+  const missedCartId = S().addToCart(draft);
+  check("disconnected add-to-cart logs a skipped event", S().webhookEvents[0]?.status === "skipped_not_connected");
+  check("disconnected add-to-cart captures no cart", S().pendingCarts.length === 0 && missedCartId.startsWith("CART-"));
+
+  S().connectWebhook("carts", "woocommerce");
+  check("carts webhook connects with endpoint + secret",
+    S().integrations.carts.connected &&
+    S().integrations.carts.endpoint.startsWith("https://hooks.sukoonpay.pk/") &&
+    S().integrations.carts.secret.startsWith("whsec_"));
+
+  const cartId = S().addToCart(draft);
+  check("connected add-to-cart captures the cart", S().pendingCarts[0]?.id === cartId && S().pendingCarts[0]?.status === "open");
+  check("cart event delivered with WooCommerce topic", S().webhookEvents[0]?.status === "delivered" && S().webhookEvents[0]?.topic === "cart.abandoned");
+
+  S().nudgeCart(cartId);
+  check("nudge flips cart to nudged", S().pendingCarts[0]?.status === "nudged");
+
+  S().connectWebhook("payment", "shopify");
+  S().startCheckout({ ...draft, cartId });
+  const orderId = S().pay();
+  check("pay creates the order", typeof orderId === "string" && S().orders.some((o) => o.id === orderId));
+  check("payment event delivered with Shopify topic", S().webhookEvents[0]?.topic === "orders/paid" && S().webhookEvents[0]?.status === "delivered");
+  check("paying recovers the pending cart", S().pendingCarts[0]?.status === "recovered");
+
+  S().sendTestEvent("payment");
+  check("test delivery logged as test", S().webhookEvents[0]?.test === true);
+
+  S().loadScenario(1);
+  check("scenario switch preserves integrations, clears carts/events",
+    S().integrations.carts.connected && S().pendingCarts.length === 0 && S().webhookEvents.length === 0);
+
+  S().resetDemo();
+  check("reset disconnects integrations", !S().integrations.carts.connected && !S().integrations.payment.connected);
+}
+
 console.log(failures === 0 ? "\nAll engine checks passed." : `\n${failures} check(s) FAILED.`);
 process.exit(failures === 0 ? 0 : 1);

@@ -24,6 +24,15 @@ export const PRODUCT = {
   sizes: ["40", "41", "42", "43", "44"],
 } as const;
 
+// Platform-correct webhook topics the simulation mirrors (Shopify topic names,
+// WooCommerce webhook topics, and a plain custom-store event name).
+export const WEBHOOK_TOPICS: Record<"payment" | "carts", Record<"shopify" | "woocommerce" | "custom", string>> = {
+  payment: { shopify: "orders/paid", woocommerce: "order.created", custom: "payment.succeeded" },
+  carts: { shopify: "checkouts/update", woocommerce: "cart.abandoned", custom: "cart.pending" },
+};
+
+export const WEBHOOK_EVENT_CAP = 20;
+
 export const ACCOUNTS = {
   buyerWallet: "buyer_wallet",
   sellerWallet: "seller_wallet",

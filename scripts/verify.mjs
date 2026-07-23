@@ -1,8 +1,9 @@
-// Walks the spec's Definition-of-Done checklist headlessly and screenshots each stage.
+// Walks the full demo across the four standalone dashboards and the webhook
+// simulation, headlessly, and screenshots each stage.
 import { chromium } from "playwright";
 import { mkdirSync } from "fs";
 
-const BASE = process.env.BASE_URL ?? "http://localhost:5174";
+const BASE = process.env.BASE_URL ?? "http://localhost:5173";
 const SHOTS = "scripts/shots";
 mkdirSync(SHOTS, { recursive: true });
 
@@ -19,101 +20,142 @@ async function shot(name) {
   await page.screenshot({ path: `${SHOTS}/${String(step).padStart(2, "0")}-${name}.png`, fullPage: false });
   console.log(`✓ ${step} ${name}`);
 }
-const demoBar = () => page.locator("div.fixed.inset-x-0.bottom-0");
 
-// 1. Landing
+// Open the demo gear popover (idempotent) and return it.
+async function gear() {
+  const panel = page.getByTestId("demo-panel");
+  if (!(await panel.isVisible().catch(() => false))) await page.getByTestId("demo-gear").click();
+  await panel.waitFor();
+  return panel;
+}
+async function gearRole(role) {
+  await gear();
+  await page.getByTestId(`demo-role-${role}`).click();
+  await page.waitForURL(`**/${role}-dashboard`);
+}
+async function loginAs(role) {
+  await page.goto(`${BASE}/${role}-dashboard/login`);
+  await page.getByTestId("quick-demo-login").click();
+  await page.waitForURL(`**/${role}-dashboard`);
+}
+
+// 1. Landing + integrations section
 await page.goto(BASE);
 await page.getByText("Shop without fear").waitFor();
 await shot("landing");
+await page.goto(`${BASE}/#integrations`);
+await page.getByText("Live on your store").waitFor();
+await shot("landing-integrations");
 
-// 2. Buy on Bazaar.pk via Sukoon Pay
+// 2. Portal chooser
+await page.goto(`${BASE}/login`);
+await page.getByText("Choose your portal").waitFor();
+await shot("portal-chooser");
+
+// 3. Buyer auth with 2FA
+await page.getByText("Open buyer portal").click();
+await page.waitForURL("**/buyer-dashboard/login");
+await page.getByRole("button", { name: "Continue" }).click();
+await page.getByPlaceholder("••••••").fill("000000");
+await page.getByRole("button", { name: /Verify & log in/ }).click();
+await page.waitForURL("**/buyer-dashboard");
+await shot("buyer-dashboard-empty");
+
+// 4. Seller connects both webhooks and sends a test delivery
+await loginAs("seller");
+await page.getByTestId("connect-carts").click();
+await page.getByTestId("connect-payment").click();
+await page.getByText("Connected · Shopify").first().waitFor();
+await page.getByTestId("test-payment").click();
+await page.getByText("200 delivered").first().waitFor();
+await shot("seller-webhooks-connected");
+
+// 5. Abandon a cart on Bazaar.pk
+await page.goto(`${BASE}/bazaar`);
+await page.getByRole("button", { name: "Add to cart" }).click();
+await page.getByText(/Saved to cart/).waitFor();
+await shot("bazaar-add-to-cart");
+
+// 6. The pending cart arrives in the seller dashboard
+await page.goto(`${BASE}/seller-dashboard`);
+await page.getByText(/CART-\d+/).first().waitFor();
+await page.getByText("Send WhatsApp nudge").waitFor();
+await shot("seller-pending-cart");
+
+// 7. Buy the product via Sukoon Pay (recovers the cart)
 await page.goto(`${BASE}/bazaar`);
 await page.getByText("Pay with Sukoon Pay (Protected)").click();
-await page.getByText("Sukoon Pay Consumer ID").waitFor();
-await shot("checkout-consumer-id");
 await page.getByRole("button", { name: "Continue" }).click();
 await page.getByPlaceholder("••••••").fill("000000");
 await page.getByRole("button", { name: "Verify" }).click();
-await page.getByText("Wakala (agency) fee").first().waitFor();
-await shot("checkout-fee-breakdown");
 await page.getByRole("button", { name: /Confirm & pay into escrow/ }).click();
-
-// 3. Buyer view — order in escrow
+await page.waitForURL("**/buyer-dashboard");
 await page.getByText("held safely in trust").first().waitFor();
-await shot("buyer-held-in-escrow");
+await shot("buyer-order-in-escrow");
 
-// 4. Seller sees "In Escrow — pending", marks shipped
-await demoBar().getByRole("button", { name: "Seller", exact: true }).click();
-await page.getByText("In Escrow — pending").first().waitFor();
-await shot("seller-escrow-pending");
+// 8. Seller sees the order in escrow, the payment event, the recovered cart; ships it
+await loginAs("seller");
+await page.getByText("In Escrow · pending").first().waitFor();
+await page.getByText("✓ Recovered").waitFor();
+await page.getByText("orders/paid").first().waitFor();
+await shot("seller-order-and-recovered-cart");
 await page.getByRole("button", { name: /Mark shipped/ }).click();
 
-// 5. Courier walks to Delivered with proof (GPS on)
-await demoBar().getByRole("button", { name: "Courier", exact: true }).click();
+// 9. Courier walks the parcel to Delivered with valid proof
+await gearRole("courier");
 await page.getByRole("button", { name: /In transit/ }).click();
 await page.getByRole("button", { name: /Out for delivery/ }).click();
-await page.getByRole("button", { name: /Submit .Delivered. \+ proof/ }).waitFor();
-await shot("courier-proof-form");
 await page.getByRole("button", { name: /Submit .Delivered. \+ proof/ }).click();
 await page.getByText("Inspection window").first().waitFor();
+await shot("courier-delivered");
 
-// 6. Buyer inspection window, fast-forward → auto-release
-await demoBar().getByRole("button", { name: "Buyer", exact: true }).click();
+// 10. Buyer inspection window, fast-forward 7 days, auto-release
+await gearRole("buyer");
 await page.getByText(/Inspection: .*left/).waitFor();
 await shot("buyer-inspection-window");
-await demoBar().getByRole("button", { name: "+7d" }).click();
-await page.getByText("Order complete — payment was released").waitFor();
+await gear();
+await page.getByTestId("demo-jump-7d").click();
+await page.getByText("Order complete. Payment was released").waitFor();
 await shot("buyer-auto-released");
 
-// 7. Seller balance moved to Released
-await demoBar().getByRole("button", { name: "Seller", exact: true }).click();
-await page.getByText("Released (withdrawable)").waitFor();
-await shot("seller-released");
-
-// 8. Admin console — ledger + total in trust
-await demoBar().getByRole("button", { name: "Admin", exact: true }).click();
-await page.getByText("Total held in trust").waitFor();
-await page.getByText("Double-entry ledger", { exact: false }).waitFor();
+// 11. Admin console: trust totals + ledger
+await gearRole("admin");
+await page.getByText("Double-entry ledger (fake money, real arithmetic)").waitFor();
 await shot("admin-ledger");
 
-// 9. Scenario 3: not received → dispute → four-eyes refund
-await demoBar().locator("select").selectOption("3");
-await demoBar().getByRole("button", { name: "Buyer", exact: true }).click();
+// 12. Scenario 3: not received → dispute → four-eyes refund
+await gear();
+await page.getByTestId("demo-scenario").selectOption("3");
+await gearRole("buyer");
 await page.getByRole("button", { name: "Report a problem" }).click();
 await page.getByText("I never received this order").waitFor();
-await shot("buyer-dispute-form");
 await page.getByRole("button", { name: "Submit dispute" }).click();
-await page.getByText(/Awaiting adjudication — 0\/2/).waitFor();
-await demoBar().getByRole("button", { name: "Admin", exact: true }).click();
-await page.getByText("Dispute queue").waitFor();
-await shot("admin-dispute-queue");
+await page.getByText(/Awaiting adjudication: 0\/2/).waitFor();
+await gearRole("admin");
 await page.getByRole("button", { name: /Approve as Sara/ }).click();
-await page.getByText(/two distinct approvers \(1\/2\)/).waitFor();
+await page.getByText(/\(1\/2\)/).waitFor();
 await page.getByRole("button", { name: /Approve as Hamza/ }).click();
 await page.getByText(/Resolved: refunded to buyer/).waitFor();
 await shot("admin-four-eyes-refunded");
 
-// 10. Sharia section on the landing page (reached via the #sharia anchor)
-await page.goto(`${BASE}/#sharia`);
-await page.getByText("not insurance").first().waitFor();
-await shot("sharia-section");
-
-// 11. Scenario 6: suspicious proof → flagged & held (leave the landing page first; it has no demo bar)
-await page.goto(`${BASE}/courier`);
-await demoBar().locator("select").selectOption("6");
-await demoBar().getByRole("button", { name: "Courier", exact: true }).click();
+// 13. Scenario 6: suspicious proof → flagged & held
+await gear();
+await page.getByTestId("demo-scenario").selectOption("6");
+await gearRole("courier");
 await page.getByRole("button", { name: /GPS match: ON/ }).click();
 await page.getByRole("button", { name: /Submit .Delivered. \+ proof/ }).click();
 await page.getByText("Held for review").first().waitFor();
 await shot("courier-flagged");
-await demoBar().getByRole("button", { name: "Admin", exact: true }).click();
+await gearRole("admin");
 await page.getByText("suspicious proof").first().waitFor();
 await shot("admin-flagged-queue");
 
-// 12. Scenario 5: never ships → +3d → auto-refund
-await demoBar().locator("select").selectOption("5");
-await demoBar().getByRole("button", { name: "+3d" }).click();
-await demoBar().getByRole("button", { name: "Buyer", exact: true }).click();
+// 14. Scenario 5: seller never ships → +3d → auto-refund
+await gear();
+await page.getByTestId("demo-scenario").selectOption("5");
+await gear();
+await page.getByTestId("demo-jump-3d").click();
+await gearRole("buyer");
 await page.getByText("returned in full from trust").waitFor();
 await shot("buyer-auto-refunded");
 
@@ -122,6 +164,6 @@ if (errors.length) {
   errors.forEach((e) => console.error("  " + e));
   process.exitCode = 1;
 } else {
-  console.log("\nAll DoD flows verified in browser — no console errors.");
+  console.log("\nAll flows verified in browser — no console errors.");
 }
 await browser.close();

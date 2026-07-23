@@ -9,7 +9,7 @@ for (const [name, viewport] of [
   const page = await browser.newPage({ viewport });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("http://localhost:5174/");
+  await page.goto("http://localhost:5173/");
   await page.waitForTimeout(1500);
   // slow scroll so every whileInView reveal fires before the stitched capture
   await page.evaluate(async () => {

@@ -44,7 +44,7 @@ export function makeOrder(orderNo: number, clock: number, draft: PendingCheckout
 export function applyPay(o: Order, clock: number): void {
   o.state = "HELD_IN_ESCROW";
   o.noShipDeadline = clock + NO_SHIP_DAYS * DAY_MS;
-  postPair(o, clock, ACCOUNTS.buyerWallet, ACCOUNTS.escrow(o.id), o.amount, "Buyer payment into escrow (Amanah — held in trust)");
+  postPair(o, clock, ACCOUNTS.buyerWallet, ACCOUNTS.escrow(o.id), o.amount, "Buyer payment into escrow (Amanah, held in trust)");
   o.timeline.push({
     at: clock,
     label: "Payment held in escrow",
@@ -81,14 +81,14 @@ export function applyCourierStatus(o: Order, clock: number, status: CourierStatu
     o.inspectionWindowEndsAt = clock + INSPECTION_WINDOW_DAYS * DAY_MS;
     o.timeline.push({
       at: clock,
-      label: "Delivered — inspection window open",
+      label: "Delivered, inspection window open",
       detail: `Proof of delivery (${proof.type}) on file. Buyer has ${INSPECTION_WINDOW_DAYS} days to confirm or report a problem; silence auto-releases.`,
     });
   } else {
     o.courier.flaggedForReview = true;
     o.timeline.push({
       at: clock,
-      label: "Delivery claimed — proof suspicious",
+      label: "Delivery claimed, proof suspicious",
       detail: "GPS mismatch or missing proof. Funds stay held; flagged for manual review. Not auto-released.",
     });
   }
@@ -97,16 +97,16 @@ export function applyCourierStatus(o: Order, clock: number, status: CourierStatu
 function postRelease(o: Order, clock: number, memo: string): void {
   const settlement = o.amount - o.wakalaFee - o.verificationFee;
   postPair(o, clock, ACCOUNTS.escrow(o.id), ACCOUNTS.sellerWallet, settlement, memo);
-  postPair(o, clock, ACCOUNTS.escrow(o.id), ACCOUNTS.platformFee, o.wakalaFee, "Wakala (agency) fee — fixed, capped");
+  postPair(o, clock, ACCOUNTS.escrow(o.id), ACCOUNTS.platformFee, o.wakalaFee, "Wakala (agency) fee, fixed and capped");
   postPair(o, clock, ACCOUNTS.escrow(o.id), ACCOUNTS.platformFee, o.verificationFee, "Delivery-verification fee");
 }
 
 export function applyConfirm(o: Order, clock: number, auto: boolean): void {
   o.state = "RELEASED";
-  postRelease(o, clock, auto ? "Auto-release on window expiry — settlement to seller (T+0)" : "Buyer confirmed receipt — settlement to seller (T+0)");
+  postRelease(o, clock, auto ? "Auto-release on window expiry, settlement to seller (T+0)" : "Buyer confirmed receipt, settlement to seller (T+0)");
   o.timeline.push({
     at: clock,
-    label: auto ? "Auto-released to seller" : "Buyer confirmed — released to seller",
+    label: auto ? "Auto-released to seller" : "Buyer confirmed, released to seller",
     detail: auto
       ? "Inspection window expired with no complaint. Silence becomes consent only after the buyer had a real chance to object."
       : "Funds released same-day. Fees deducted transparently.",
@@ -116,22 +116,22 @@ export function applyConfirm(o: Order, clock: number, auto: boolean): void {
 export function applyRefund(o: Order, clock: number, kind: "REFUNDED" | "AUTO_REFUNDED", reason: string): void {
   o.state = kind;
   o.noShipDeadline = null;
-  postPair(o, clock, ACCOUNTS.escrow(o.id), ACCOUNTS.buyerWallet, o.amount, "Refund — buyer's own trust funds returned in full");
+  postPair(o, clock, ACCOUNTS.escrow(o.id), ACCOUNTS.buyerWallet, o.amount, "Refund: buyer's own trust funds returned in full");
   o.timeline.push({ at: clock, label: kind === "AUTO_REFUNDED" ? "Auto-refunded to buyer" : "Refunded to buyer", detail: reason });
 }
 
-// The published decision table — both parties can predict the outcome (no gharar).
+// The published decision table. Both parties can predict the outcome (no gharar).
 export function evaluateRule(reason: DisputeReason, proof: Proof | null, buyerEvidence: string | null): { rule: string; suggested: Resolution } {
   if (reason === "not_received") {
     if (proof && proof.type === "photo" && proof.gpsMatch) {
-      return { rule: "Rule R1 — Non-receipt claim vs strong courier proof (photo + GPS match): release to seller.", suggested: "release" };
+      return { rule: "Rule R1: Non-receipt claim vs strong courier proof (photo + GPS match): release to seller.", suggested: "release" };
     }
-    return { rule: "Rule R2 — Non-receipt claim and courier proof lacks photo or GPS corroboration: refund buyer.", suggested: "refund" };
+    return { rule: "Rule R2: Non-receipt claim and courier proof lacks photo or GPS corroboration: refund buyer.", suggested: "refund" };
   }
   if (buyerEvidence) {
-    return { rule: "Rule R3 — Defective / not-as-described with buyer photo evidence: refund buyer (return initiated).", suggested: "refund" };
+    return { rule: "Rule R3: Defective / not-as-described with buyer photo evidence: refund buyer (return initiated).", suggested: "refund" };
   }
-  return { rule: "Rule R4 — Defect claim without evidence: release to seller.", suggested: "release" };
+  return { rule: "Rule R4: Defect claim without evidence: release to seller.", suggested: "release" };
 }
 
 export function applyDispute(o: Order, clock: number, reason: DisputeReason, buyerEvidence: string | null): void {
@@ -150,7 +150,7 @@ export function applyDispute(o: Order, clock: number, reason: DisputeReason, buy
   o.inspectionWindowEndsAt = null;
   o.timeline.push({
     at: clock,
-    label: "Dispute opened — funds frozen",
+    label: "Dispute opened, funds frozen",
     detail: `${reason === "not_received" ? "Buyer reports non-receipt" : "Buyer reports defective / not as described"}. ${rule}`,
   });
 }
@@ -181,5 +181,5 @@ export function applyClearFlag(o: Order, clock: number): void {
 export function applyRefundFlagged(o: Order, clock: number): void {
   if (!o.courier.flaggedForReview) return;
   o.courier.flaggedForReview = false;
-  applyRefund(o, clock, "REFUNDED", "Delivery proof rejected on manual review — refund to buyer.");
+  applyRefund(o, clock, "REFUNDED", "Delivery proof rejected on manual review, refund to buyer.");
 }
