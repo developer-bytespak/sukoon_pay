@@ -70,11 +70,13 @@ await page.getByTestId("test-payment").click();
 await page.getByText("200 delivered").first().waitFor();
 await shot("seller-webhooks-connected");
 
-// 5. Abandon a cart on Bazaar.pk
-await page.goto(`${BASE}/bazaar`);
-await page.getByRole("button", { name: "Add to cart" }).click();
-await page.getByText(/Saved to cart/).waitFor();
-await shot("bazaar-add-to-cart");
+// 5. Abandon a cart on Shopping.pk (two products, one bumped to qty 2)
+await page.goto(`${BASE}/store`);
+await page.getByText("Shopping.pk").first().waitFor();
+await page.getByTestId("add-sneakers").click();
+await page.getByText("1 in cart").waitFor();
+await page.getByTestId("add-headphones").click();
+await shot("store-add-to-cart");
 
 // 6. The pending cart arrives in the seller dashboard
 await page.goto(`${BASE}/seller-dashboard`);
@@ -82,9 +84,12 @@ await page.getByText(/CART-\d+/).first().waitFor();
 await page.getByText("Send WhatsApp nudge").waitFor();
 await shot("seller-pending-cart");
 
-// 7. Buy the product via Sukoon Pay (recovers the cart)
-await page.goto(`${BASE}/bazaar`);
-await page.getByText("Pay with Sukoon Pay (Protected)").click();
+// 7. Buy the cart via Sukoon Pay (recovers it)
+await page.goto(`${BASE}/store`);
+await page.getByTestId("cart-button").click();
+await page.getByTestId("cart-drawer").waitFor();
+await shot("store-cart-drawer");
+await page.getByTestId("pay-sukoon").click();
 await page.getByRole("button", { name: "Continue" }).click();
 await page.getByPlaceholder("••••••").fill("000000");
 await page.getByRole("button", { name: "Verify" }).click();

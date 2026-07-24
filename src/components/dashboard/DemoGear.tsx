@@ -117,7 +117,7 @@ export default function DemoGear() {
 
             <div className="flex items-center justify-between border-t border-white/10 pt-3">
               <button
-                onClick={() => navigate("/bazaar")}
+                onClick={() => navigate("/store")}
                 className="flex items-center gap-1.5 text-xs font-semibold text-white/50 transition hover:text-white"
               >
                 <Store size={13} /> Open store

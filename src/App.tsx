@@ -5,7 +5,7 @@ import RequireRole from "./components/dashboard/RequireRole";
 import Landing from "./pages/Landing";
 import PortalChooser from "./pages/PortalChooser";
 import RoleAuth from "./pages/RoleAuth";
-import Bazaar from "./pages/Bazaar";
+import Store from "./pages/Store";
 import SukoonCheckout from "./pages/SukoonCheckout";
 import BuyerDashboard from "./pages/dashboards/BuyerDashboard";
 import SellerDashboard from "./pages/dashboards/SellerDashboard";
@@ -25,7 +25,8 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<PortalChooser />} />
       <Route path="/signup" element={<Navigate to="/login" replace />} />
-      <Route path="/bazaar" element={<Bazaar />} />
+      <Route path="/store" element={<Store />} />
+      <Route path="/bazaar" element={<Navigate to="/store" replace />} />
       <Route path="/checkout" element={<SukoonCheckout />} />
 
       {(Object.keys(ROLE_CONFIGS) as Role[]).map((role) => {

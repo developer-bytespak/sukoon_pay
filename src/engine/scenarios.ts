@@ -1,5 +1,5 @@
-import type { Order, Proof } from "./types";
-import { DAY_MS, HOUR_MS, PRODUCT } from "./constants";
+import type { Order, PendingCheckout, Proof } from "./types";
+import { DAY_MS, HOUR_MS, PRODUCTS } from "./constants";
 import { applyCourierStatus, applyPay, applyShip, makeOrder } from "./transitions";
 
 export interface Scenario {
@@ -10,8 +10,9 @@ export interface Scenario {
   seed: (clock: number) => Order[];
 }
 
-function draft() {
-  return { productName: PRODUCT.name, productImage: PRODUCT.image, amount: PRODUCT.price, size: "42" };
+function draft(): PendingCheckout {
+  const p = PRODUCTS[0];
+  return { items: [{ id: p.id, name: p.name, image: p.image, qty: 1, price: p.price }], amount: p.price, cartId: null };
 }
 
 function paidOrder(clock: number, paidAgoMs: number): Order {

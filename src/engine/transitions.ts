@@ -14,12 +14,15 @@ import { postPair } from "./ledger";
 // All transition helpers mutate the order passed in; the store clones before applying.
 
 export function makeOrder(orderNo: number, clock: number, draft: PendingCheckout): Order {
+  const first = draft.items[0];
+  const extra = draft.items.length - 1;
   return {
     id: `SP-${10_000 + orderNo}`,
-    productName: draft.productName,
-    productImage: draft.productImage,
+    productName: extra > 0 ? `${first.name} +${extra} more` : first.name,
+    productImage: first.image,
+    items: draft.items,
     amount: draft.amount,
-    size: draft.size,
+    size: null,
     buyerId: USERS.buyer.id,
     sellerId: USERS.seller.id,
     state: "CREATED",

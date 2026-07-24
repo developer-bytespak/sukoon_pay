@@ -8,7 +8,7 @@ import { ACCOUNTS, BUYER_STARTING_BALANCE, USERS } from "../../engine/constants"
 import { balanceOf } from "../../engine/ledger";
 import { formatPKR } from "../../engine/fees";
 import { formatSimDate, remainingLabel } from "../../lib/format";
-import { StatePill } from "../../components/ui";
+import { ProductThumb, StatePill } from "../../components/ui";
 import OrderTimeline from "../../components/OrderTimeline";
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import { GlassCard, Kpi, SectionHeader } from "../../components/dashboard/ui";
@@ -90,13 +90,14 @@ function BuyerOrderCard({ order }: { order: Order }) {
     <GlassCard>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{order.productImage}</span>
+          <ProductThumb src={order.productImage} alt={order.productName} />
           <div>
             <p className="font-bold text-white">
               {order.id} · {order.productName}
             </p>
             <p className="text-xs text-white/40">
-              {formatPKR(order.amount)} · size {order.size} · via Bazaar.pk
+              {formatPKR(order.amount)} · {(order.items ?? []).reduce((n, i) => n + i.qty, 0) || 1}{" "}
+              {((order.items ?? []).reduce((n, i) => n + i.qty, 0) || 1) === 1 ? "item" : "items"} · via Shopping.pk
             </p>
           </div>
         </div>
@@ -222,10 +223,10 @@ export default function BuyerDashboard() {
           <ShoppingBag className="mx-auto mb-2 text-white/20" size={32} />
           <p className="text-sm text-white/40">No orders yet.</p>
           <Link
-            to="/bazaar"
+            to="/store"
             className="mt-3 inline-block rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-stone-950 transition hover:bg-emerald-400"
           >
-            Shop on Bazaar.pk
+            Shop on Shopping.pk
           </Link>
         </GlassCard>
       ) : (
@@ -246,7 +247,7 @@ export default function BuyerDashboard() {
           {[...history].reverse().map((o) => (
             <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 px-3 py-3 last:border-0">
               <div className="flex items-center gap-3">
-                <span className="text-xl">{o.productImage}</span>
+                <ProductThumb src={o.productImage} alt={o.productName} className="h-9 w-9" />
                 <div>
                   <p className="text-sm font-semibold text-white">
                     {o.id} · {o.productName}

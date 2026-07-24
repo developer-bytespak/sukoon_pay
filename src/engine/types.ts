@@ -70,8 +70,9 @@ export interface Dispute {
 
 export interface Order {
   id: string;
-  productName: string;
-  productImage: string; // emoji art — keeps the demo fully self-contained
+  productName: string; // display summary, e.g. "Street Runner Sneakers +2 more"
+  productImage: string; // image path (older persisted orders may hold an emoji)
+  items?: CartItem[];
   amount: number;
   size: string | null;
   buyerId: string;
@@ -89,11 +90,9 @@ export interface Order {
 }
 
 export interface PendingCheckout {
-  productName: string;
-  productImage: string;
-  amount: number;
-  size: string | null;
-  cartId?: string | null; // set when the buyer came from an "added to cart" state, so paying recovers the cart
+  items: CartItem[];
+  amount: number; // cart total
+  cartId?: string | null; // set when the buyer came from a cart, so paying recovers it
 }
 
 /* ------------------------- webhook simulation ------------------------- */
@@ -110,10 +109,16 @@ export interface WebhookConfig {
 }
 
 export interface CartItem {
+  id: string; // catalog product id
   name: string;
   image: string;
   qty: number;
   price: number;
+}
+
+export interface ShoppingCart {
+  id: string | null; // becomes a CART-xxxx id on first add
+  items: CartItem[];
 }
 
 export interface PendingCart {

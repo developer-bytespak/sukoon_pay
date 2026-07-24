@@ -34,7 +34,11 @@ Two webhooks connect a store to Sukoon Pay (simulated end to end, modeled on rea
 - **Checkout payment webhook** — Shopify `orders/paid` · WooCommerce `order.created` · custom `payment.succeeded`. Fires when a buyer pays with Sukoon Pay; the order lands in the seller dashboard already held in escrow.
 - **Pending carts webhook** — Shopify `checkouts/update` · WooCommerce `cart.abandoned` · custom `cart.pending`. Streams abandoned carts into the seller dashboard's Pending carts section.
 
-Connect them in the seller dashboard's Integrations section (per-platform setup snippets, endpoint + HMAC secret, test deliveries, live event log). Carts are only captured while the webhook is connected; missed events are counted as the reason to connect. Try it: connect the carts webhook, add to cart on `/bazaar` without paying, watch it arrive; then pay and watch the cart flip to Recovered.
+Connect them in the seller dashboard's Integrations section (per-platform setup snippets, endpoint + HMAC secret, test deliveries, live event log). Carts are only captured while the webhook is connected; missed events are counted as the reason to connect. Try it: connect the carts webhook, add products to the cart on `/store` without paying, watch the cart arrive; then pay and watch it flip to Recovered.
+
+## Shopping.pk demo store
+
+`/store` is the fake partner storefront (deliberately not Sukoon-branded): 8 products with real photos, ratings, a multi-item cart drawer with quantity controls, and the COD vs "Pay with Sukoon Pay (Protected)" choice at the cart. Checkout of the whole cart creates one escrowed order.
 
 ## Driving the demo
 
@@ -49,5 +53,5 @@ The **demo gear** (settings icon in every dashboard header) holds the presenter 
 ## Structure
 
 - `src/engine/` — the simulated backend: state machine transitions, tiered Wakala fees, double-entry ledger, demo clock, scenario seeds, webhook/cart simulation, Zustand store (persist v1 with migration)
-- `src/pages/` — Landing (Sharia at `/#sharia`, integrations at `/#integrations`), PortalChooser, RoleAuth, Bazaar.pk storefront (with add-to-cart), Sukoon checkout, `dashboards/` (Buyer, Seller, Courier, Admin)
+- `src/pages/` — Landing (Sharia at `/#sharia`, integrations at `/#integrations`), PortalChooser, RoleAuth, Shopping.pk storefront (`Store.tsx`), Sukoon checkout, `dashboards/` (Buyer, Seller, Courier, Admin)
 - `src/components/` — shared light/dark (`tone`) components: state pills, ledger table, timeline, state-machine diagram; `dashboard/` shell, demo gear, glass primitives, integrations section

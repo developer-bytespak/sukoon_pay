@@ -11,18 +11,33 @@ export const BUYER_STARTING_BALANCE = 25_000;
 
 export const USERS = {
   buyer: { id: "buyer-1", name: "Ayesha Khan", consumerId: "SP-C-88231" },
-  seller: { id: "seller-1", name: "Faisal Traders (Bazaar.pk)" },
+  seller: { id: "seller-1", name: "Faisal Traders (Shopping.pk)" },
   courier: { id: "courier-1", name: "TCS Express" },
   adminA: { id: "admin-a", name: "Sara (Adjudicator A)" },
   adminB: { id: "admin-b", name: "Hamza (Adjudicator B)" },
 } as const;
 
-export const PRODUCT = {
-  name: "Street Runner Sneakers",
-  image: "👟",
-  price: 4_999,
-  sizes: ["40", "41", "42", "43", "44"],
-} as const;
+export interface CatalogProduct {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  rating: number; // 0..5
+  reviews: number;
+  tag?: string;
+}
+
+// Prices deliberately span the Wakala fee tiers (25 / 75 / 200).
+export const PRODUCTS: CatalogProduct[] = [
+  { id: "sneakers", name: "Street Runner Sneakers", image: "/img/products/sneakers.jpg", price: 4_999, rating: 4.2, reviews: 318, tag: "Best seller" },
+  { id: "headphones", name: "Studio Wireless Headphones", image: "/img/products/headphones.jpg", price: 18_999, rating: 4.7, reviews: 204 },
+  { id: "watch", name: "Minimal Analog Watch", image: "/img/products/watch.jpg", price: 12_499, rating: 4.5, reviews: 141 },
+  { id: "camera", name: "Instant Retro Camera", image: "/img/products/camera.jpg", price: 27_999, rating: 4.8, reviews: 96, tag: "New" },
+  { id: "backpack", name: "Urban Canvas Backpack", image: "/img/products/backpack.jpg", price: 6_499, rating: 4.3, reviews: 267 },
+  { id: "perfume", name: "Oud Noir Perfume 100ml", image: "/img/products/perfume.jpg", price: 8_999, rating: 4.6, reviews: 178 },
+  { id: "sunglasses", name: "Aviator Sunglasses", image: "/img/products/sunglasses.jpg", price: 3_499, rating: 4.1, reviews: 322 },
+  { id: "tee", name: "Essential Cotton Tee", image: "/img/products/tee.jpg", price: 1_899, rating: 4.4, reviews: 510 },
+];
 
 // Platform-correct webhook topics the simulation mirrors (Shopify topic names,
 // WooCommerce webhook topics, and a plain custom-store event name).

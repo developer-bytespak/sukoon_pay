@@ -20,8 +20,8 @@ export default function SukoonCheckout() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-sm text-stone-500">
         <p>No checkout in progress.</p>
-        <Link to="/bazaar" className="font-semibold text-emerald-700">
-          Go to Bazaar.pk →
+        <Link to="/store" className="font-semibold text-emerald-700">
+          Go to Shopping.pk →
         </Link>
       </div>
     );
@@ -44,13 +44,21 @@ export default function SukoonCheckout() {
         </div>
 
         <Card className="!p-6">
-          <div className="mb-4 flex items-center gap-3 rounded-xl bg-stone-50 p-3">
-            <span className="text-3xl">{pendingCheckout.productImage}</span>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-stone-800">{pendingCheckout.productName}</p>
-              <p className="text-xs text-stone-500">Bazaar.pk · size {pendingCheckout.size}</p>
+          <div className="mb-4 space-y-2 rounded-xl bg-stone-50 p-3">
+            {pendingCheckout.items.map((i) => (
+              <div key={i.id} className="flex items-center gap-3">
+                <img src={i.image} alt={i.name} className="h-10 w-10 rounded-lg object-cover" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-stone-800">{i.name}</p>
+                  <p className="text-xs text-stone-500">Shopping.pk · ×{i.qty}</p>
+                </div>
+                <p className="text-sm font-bold text-stone-900">{formatPKR(i.qty * i.price)}</p>
+              </div>
+            ))}
+            <div className="flex items-center justify-between border-t border-stone-200 pt-2">
+              <p className="text-xs font-semibold text-stone-500">Total</p>
+              <p className="font-bold text-stone-900">{formatPKR(pendingCheckout.amount)}</p>
             </div>
-            <p className="font-bold text-stone-900">{formatPKR(pendingCheckout.amount)}</p>
           </div>
 
           {step === "id" && (

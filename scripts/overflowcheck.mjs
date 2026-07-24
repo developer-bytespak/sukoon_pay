@@ -3,7 +3,7 @@ import { chromium } from "playwright";
 const PUBLIC_PATHS = [
   "/",
   "/login",
-  "/bazaar",
+  "/store",
   "/buyer-dashboard/login",
   "/seller-dashboard/login",
   "/courier-dashboard/login",

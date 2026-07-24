@@ -1,5 +1,6 @@
 // Engine smoke test — simulates all six demo scenarios without the UI.
-import { DAY_MS, ACCOUNTS, BUYER_STARTING_BALANCE, USERS, PRODUCT } from "../src/engine/constants";
+import type { PendingCheckout } from "../src/engine/types";
+import { DAY_MS, ACCOUNTS, BUYER_STARTING_BALANCE, USERS, PRODUCTS } from "../src/engine/constants";
 import {
   applyApproval,
   applyClearFlag,
@@ -24,22 +25,27 @@ function check(name: string, cond: boolean, detail = "") {
 }
 
 const T0 = 1_800_000_000_000;
-const draft = { productName: PRODUCT.name, productImage: PRODUCT.image, amount: PRODUCT.price, size: "42" };
+const P = PRODUCTS[0];
+const draft: PendingCheckout = {
+  items: [{ id: P.id, name: P.name, image: P.image, qty: 1, price: P.price }],
+  amount: P.price,
+  cartId: null,
+};
 
 console.log("Scenario 1 — happy path");
 {
   const o = makeOrder(1, T0, draft);
   applyPay(o, T0);
   check("held in escrow", o.state === "HELD_IN_ESCROW");
-  check("escrow balance = amount", balanceOf([o], ACCOUNTS.escrow(o.id)) === PRODUCT.price);
-  check("buyer wallet debited", balanceOf([o], ACCOUNTS.buyerWallet, BUYER_STARTING_BALANCE) === BUYER_STARTING_BALANCE - PRODUCT.price);
+  check("escrow balance = amount", balanceOf([o], ACCOUNTS.escrow(o.id)) === P.price);
+  check("buyer wallet debited", balanceOf([o], ACCOUNTS.buyerWallet, BUYER_STARTING_BALANCE) === BUYER_STARTING_BALANCE - P.price);
   applyShip(o, T0 + 1, "TCS-1");
   applyCourierStatus(o, T0 + 2, "delivered", { type: "photo", value: "p", gpsMatch: true });
   check("inspection window opened", o.state === "INSPECTION_WINDOW" && o.inspectionWindowEndsAt === T0 + 2 + 7 * DAY_MS);
   applyConfirm(o, T0 + 3, false);
   check("released", o.state === "RELEASED");
   check("escrow zeroed", balanceOf([o], ACCOUNTS.escrow(o.id)) === 0);
-  check("seller got amount − fees", balanceOf([o], ACCOUNTS.sellerWallet) === PRODUCT.price - o.wakalaFee - o.verificationFee);
+  check("seller got amount − fees", balanceOf([o], ACCOUNTS.sellerWallet) === P.price - o.wakalaFee - o.verificationFee);
   check("platform fees earned", balanceOf([o], ACCOUNTS.platformFee) === o.wakalaFee + o.verificationFee);
   const drTotal = o.ledgerEntries.filter((e) => e.direction === "DR").reduce((s, e) => s + e.amount, 0);
   const crTotal = o.ledgerEntries.filter((e) => e.direction === "CR").reduce((s, e) => s + e.amount, 0);
@@ -61,7 +67,7 @@ console.log("Scenario 3 — not received → R2 refund with four-eyes");
   check("disputed", o.state === "DISPUTED");
   check("rule R2 suggests refund", o.dispute!.suggestedResolution === "refund", o.dispute!.ruleApplied ?? "");
   applyApproval(o, T0, USERS.adminA.id, USERS.adminA.name);
-  check("one approval does NOT move money", o.state === "DISPUTED" && balanceOf([o], ACCOUNTS.escrow(o.id)) === PRODUCT.price);
+  check("one approval does NOT move money", o.state === "DISPUTED" && balanceOf([o], ACCOUNTS.escrow(o.id)) === P.price);
   applyApproval(o, T0, USERS.adminA.id, USERS.adminA.name);
   check("same admin cannot double-approve", o.dispute!.approvals.length === 1);
   applyApproval(o, T0, USERS.adminB.id, USERS.adminB.name);
@@ -99,7 +105,7 @@ console.log("Scenario 6 — suspicious proof held, then adjudicated");
   const [o] = SCENARIOS[5].seed(T0);
   applyCourierStatus(o, T0, "delivered", { type: "photo", value: "p", gpsMatch: false });
   check("flagged, window NOT opened", o.state === "SHIPPED" && o.courier.flaggedForReview && o.inspectionWindowEndsAt === null);
-  check("funds still in escrow", balanceOf([o], ACCOUNTS.escrow(o.id)) === PRODUCT.price);
+  check("funds still in escrow", balanceOf([o], ACCOUNTS.escrow(o.id)) === P.price);
   applyClearFlag(o, T0 + 1);
   check("admin accept opens window", o.state === "INSPECTION_WINDOW" && !o.courier.flaggedForReview);
 }
@@ -124,9 +130,10 @@ console.log("Webhook simulation — store-level flows");
 
   check("integrations start disconnected", !S().integrations.payment.connected && !S().integrations.carts.connected);
 
-  const missedCartId = S().addToCart(draft);
+  const missedCartId = S().addToCart(P);
   check("disconnected add-to-cart logs a skipped event", S().webhookEvents[0]?.status === "skipped_not_connected");
   check("disconnected add-to-cart captures no cart", S().pendingCarts.length === 0 && missedCartId.startsWith("CART-"));
+  check("buyer's cart still tracks the item", S().cart.id === missedCartId && S().cart.items[0]?.qty === 1);
 
   S().connectWebhook("carts", "woocommerce");
   check("carts webhook connects with endpoint + secret",
@@ -134,19 +141,26 @@ console.log("Webhook simulation — store-level flows");
     S().integrations.carts.endpoint.startsWith("https://hooks.sukoonpay.pk/") &&
     S().integrations.carts.secret.startsWith("whsec_"));
 
-  const cartId = S().addToCart(draft);
+  const cartId = S().addToCart(P);
+  check("same cart upserts to qty 2", cartId === missedCartId && S().cart.items[0]?.qty === 2);
   check("connected add-to-cart captures the cart", S().pendingCarts[0]?.id === cartId && S().pendingCarts[0]?.status === "open");
+  check("captured cart carries the full snapshot", S().pendingCarts[0]?.value === 2 * P.price);
   check("cart event delivered with WooCommerce topic", S().webhookEvents[0]?.status === "delivered" && S().webhookEvents[0]?.topic === "cart.abandoned");
+
+  S().addToCart(PRODUCTS[1]);
+  S().updateCartQty(PRODUCTS[1].id, -1);
+  check("qty edits sync the captured cart", S().cart.items.length === 1 && S().pendingCarts[0]?.items.length === 1);
 
   S().nudgeCart(cartId);
   check("nudge flips cart to nudged", S().pendingCarts[0]?.status === "nudged");
 
   S().connectWebhook("payment", "shopify");
-  S().startCheckout({ ...draft, cartId });
+  S().startCheckout({ items: S().cart.items, amount: 2 * P.price, cartId });
   const orderId = S().pay();
   check("pay creates the order", typeof orderId === "string" && S().orders.some((o) => o.id === orderId));
   check("payment event delivered with Shopify topic", S().webhookEvents[0]?.topic === "orders/paid" && S().webhookEvents[0]?.status === "delivered");
   check("paying recovers the pending cart", S().pendingCarts[0]?.status === "recovered");
+  check("paying empties the buyer's cart", S().cart.id === null && S().cart.items.length === 0);
 
   S().sendTestEvent("payment");
   check("test delivery logged as test", S().webhookEvents[0]?.test === true);

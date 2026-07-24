@@ -9,9 +9,9 @@ await page.getByTestId("quick-demo-login").click();
 await page.waitForURL("**/seller-dashboard");
 await page.getByTestId("connect-carts").click();
 await page.getByText(/Connected ·/).first().waitFor();
-await page.goto("http://localhost:5173/bazaar");
-await page.getByRole("button", { name: "Add to cart" }).click();
-await page.getByText(/Saved to cart/).waitFor();
+await page.goto("http://localhost:5173/store");
+await page.getByTestId("add-sneakers").click();
+await page.getByText("1 in cart").waitFor();
 await page.goto("http://localhost:5173/seller-dashboard");
 await page.getByText(/CART-\d+/).first().waitFor();
 

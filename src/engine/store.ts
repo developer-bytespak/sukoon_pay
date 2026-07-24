@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
+  CartItem,
   CourierStatus,
   DisputeReason,
   Order,
@@ -8,11 +9,13 @@ import type {
   PendingCheckout,
   Proof,
   Role,
+  ShoppingCart,
   StorePlatform,
   WebhookConfig,
   WebhookEvent,
   WebhookType,
 } from "./types";
+import type { CatalogProduct } from "./constants";
 import { USERS, WEBHOOK_EVENT_CAP, WEBHOOK_TOPICS } from "./constants";
 import { SCENARIOS } from "./scenarios";
 import {
@@ -37,11 +40,11 @@ interface AppState {
   scenarioHint: string | null;
   pendingCheckout: PendingCheckout | null;
 
-  // webhook simulation
+  // storefront cart + webhook simulation
+  cart: ShoppingCart;
   integrations: Record<WebhookType, WebhookConfig>;
   pendingCarts: PendingCart[];
   webhookEvents: WebhookEvent[]; // newest first, capped
-  activeCartId: string | null; // the buyer's current cart on the storefront
   nextCartNo: number;
   nextEventNo: number;
 
@@ -64,7 +67,9 @@ interface AppState {
   connectWebhook: (type: WebhookType, platform: StorePlatform) => void;
   disconnectWebhook: (type: WebhookType) => void;
   sendTestEvent: (type: WebhookType) => void;
-  addToCart: (draft: PendingCheckout) => string;
+  addToCart: (product: CatalogProduct) => string;
+  updateCartQty: (productId: string, delta: number) => void;
+  removeFromCart: (productId: string) => void;
   nudgeCart: (cartId: string) => void;
 }
 
@@ -102,6 +107,14 @@ function disconnectedConfig(): WebhookConfig {
 
 function defaultIntegrations(): Record<WebhookType, WebhookConfig> {
   return { payment: disconnectedConfig(), carts: disconnectedConfig() };
+}
+
+function emptyCart(): ShoppingCart {
+  return { id: null, items: [] };
+}
+
+function cartValue(items: CartItem[]): number {
+  return items.reduce((sum, i) => sum + i.qty * i.price, 0);
 }
 
 function fakeSignature(seed: string): string {
@@ -149,10 +162,10 @@ export const useStore = create<AppState>()(
       scenarioHint: null,
       pendingCheckout: null,
 
+      cart: emptyCart(),
       integrations: defaultIntegrations(),
       pendingCarts: [],
       webhookEvents: [],
-      activeCartId: null,
       nextCartNo: 1042,
       nextEventNo: 1,
 
@@ -163,7 +176,7 @@ export const useStore = create<AppState>()(
 
       pay: () => {
         const { pendingCheckout, clock, nextOrderNo } = get();
-        if (!pendingCheckout) return null;
+        if (!pendingCheckout || pendingCheckout.items.length === 0) return null;
         const order = makeOrder(nextOrderNo, clock, pendingCheckout);
         applyPay(order, clock);
         set((s) => {
@@ -175,7 +188,7 @@ export const useStore = create<AppState>()(
               order_id: order.id,
               amount_pkr: order.amount,
               currency: "PKR",
-              line_items: [{ name: order.productName, qty: 1, price: order.amount, size: order.size }],
+              line_items: pendingCheckout.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
               buyer: USERS.buyer.consumerId,
               escrow: "held_in_trust",
             },
@@ -185,7 +198,7 @@ export const useStore = create<AppState>()(
             orders: [...s.orders, order],
             nextOrderNo: s.nextOrderNo + 1,
             pendingCheckout: null,
-            activeCartId: null,
+            cart: emptyCart(),
             webhookEvents: pushEvent(s.webhookEvents, event),
             nextEventNo: s.nextEventNo + 1,
             pendingCarts: s.pendingCarts.map((c) =>
@@ -228,7 +241,7 @@ export const useStore = create<AppState>()(
         if (!scenario) return;
         const clock = Date.now();
         // integrations survive a scenario switch (the presenter shouldn't reconnect);
-        // carts and events are cleared with the rest of the storyline state.
+        // the cart, carts and events are cleared with the rest of the storyline state.
         set({
           clock,
           orders: scenario.seed(clock),
@@ -236,9 +249,9 @@ export const useStore = create<AppState>()(
           activeScenario: id,
           scenarioHint: scenario.hint,
           pendingCheckout: null,
+          cart: emptyCart(),
           pendingCarts: [],
           webhookEvents: [],
-          activeCartId: null,
           nextCartNo: 1042,
           nextEventNo: 1,
         });
@@ -255,10 +268,10 @@ export const useStore = create<AppState>()(
           activeScenario: null,
           scenarioHint: null,
           pendingCheckout: null,
+          cart: emptyCart(),
           integrations: defaultIntegrations(),
           pendingCarts: [],
           webhookEvents: [],
-          activeCartId: null,
           nextCartNo: 1042,
           nextEventNo: 1,
         }),
@@ -298,10 +311,16 @@ export const useStore = create<AppState>()(
           return { webhookEvents: pushEvent(s.webhookEvents, event), nextEventNo: s.nextEventNo + 1 };
         }),
 
-      addToCart: (draft) => {
-        const cartId = `CART-${get().nextCartNo}`;
+      // Each add mirrors Shopify's checkouts/update: the whole cart snapshot is delivered again.
+      addToCart: (product) => {
+        const cartId = get().cart.id ?? `CART-${get().nextCartNo}`;
         set((s) => {
-          const connected = s.integrations.carts.connected;
+          const isNewCart = s.cart.id === null;
+          const existing = s.cart.items.find((i) => i.id === product.id);
+          const items = existing
+            ? s.cart.items.map((i) => (i.id === product.id ? { ...i, qty: i.qty + 1 } : i))
+            : [...s.cart.items, { id: product.id, name: product.name, image: product.image, qty: 1, price: product.price }];
+          const value = cartValue(items);
           const event = buildEvent(
             s,
             "carts",
@@ -309,31 +328,47 @@ export const useStore = create<AppState>()(
               event: "cart.pending",
               cart_id: cartId,
               customer: "aye***@gmail.com",
-              line_items: [{ name: draft.productName, qty: 1, price: draft.amount, size: draft.size }],
-              value_pkr: draft.amount,
+              line_items: items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
+              value_pkr: value,
               note: "Checkout not completed. Real cart-recovery plugins fire after a cutoff; the demo fires immediately.",
             },
             false
           );
-          const cart: PendingCart = {
+          const connected = s.integrations.carts.connected;
+          const existingRow = s.pendingCarts.find((c) => c.id === cartId);
+          const row: PendingCart = {
             id: cartId,
             customerMasked: "aye***@gmail.com",
-            items: [{ name: draft.productName, image: draft.productImage, qty: 1, price: draft.amount }],
-            value: draft.amount,
-            createdAt: s.clock,
-            status: "open",
+            items,
+            value,
+            createdAt: existingRow?.createdAt ?? s.clock,
+            status: existingRow && existingRow.status !== "recovered" ? existingRow.status : "open",
           };
           return {
+            cart: { id: cartId, items },
+            nextCartNo: isNewCart ? s.nextCartNo + 1 : s.nextCartNo,
             webhookEvents: pushEvent(s.webhookEvents, event),
             nextEventNo: s.nextEventNo + 1,
-            nextCartNo: s.nextCartNo + 1,
-            activeCartId: cartId,
-            // the cart is only captured for the seller when the carts webhook is connected
-            pendingCarts: connected ? [cart, ...s.pendingCarts] : s.pendingCarts,
+            pendingCarts: !connected
+              ? s.pendingCarts
+              : existingRow
+                ? s.pendingCarts.map((c) => (c.id === cartId ? row : c))
+                : [row, ...s.pendingCarts],
           };
         });
         return cartId;
       },
+
+      updateCartQty: (productId, delta) =>
+        set((s) => {
+          const items = s.cart.items
+            .map((i) => (i.id === productId ? { ...i, qty: i.qty + delta } : i))
+            .filter((i) => i.qty > 0);
+          return syncCartState(s, items);
+        }),
+
+      removeFromCart: (productId) =>
+        set((s) => syncCartState(s, s.cart.items.filter((i) => i.id !== productId))),
 
       nudgeCart: (cartId) =>
         set((s) => ({
@@ -343,13 +378,13 @@ export const useStore = create<AppState>()(
     {
       name: "sukoon-pay-demo",
       storage: createJSONStorage(() => localStorage),
-      version: 1,
-      // Older localStorage snapshots predate the webhook fields; fill them in.
+      version: 2,
+      // Older localStorage snapshots predate the cart/webhook fields; fill them in.
       migrate: (persisted) => ({
+        cart: emptyCart(),
         integrations: defaultIntegrations(),
         pendingCarts: [],
         webhookEvents: [],
-        activeCartId: null,
         nextCartNo: 1042,
         nextEventNo: 1,
         ...(persisted as object),
@@ -357,3 +392,20 @@ export const useStore = create<AppState>()(
     }
   )
 );
+
+// Quantity edits keep the seller's pending-cart row in sync without spamming the event log.
+function syncCartState(
+  s: Pick<AppState, "cart" | "pendingCarts">,
+  items: CartItem[]
+): Pick<AppState, "cart" | "pendingCarts"> {
+  const cartId = s.cart.id;
+  if (!cartId) return { cart: s.cart, pendingCarts: s.pendingCarts };
+  if (items.length === 0) {
+    return { cart: emptyCart(), pendingCarts: s.pendingCarts.filter((c) => c.id !== cartId || c.status === "recovered") };
+  }
+  const value = cartValue(items);
+  return {
+    cart: { id: cartId, items },
+    pendingCarts: s.pendingCarts.map((c) => (c.id === cartId && c.status !== "recovered" ? { ...c, items, value } : c)),
+  };
+}

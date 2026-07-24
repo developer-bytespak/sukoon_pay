@@ -32,6 +32,15 @@ export function StatePill({ state, flagged, tone = "light" }: { state: OrderStat
   );
 }
 
+// Product art: an image path for catalog products, with a fallback for
+// emoji strings that may survive in older persisted demo state.
+export function ProductThumb({ src, alt = "", className = "h-12 w-12" }: { src: string; alt?: string; className?: string }) {
+  if (src.startsWith("/") || src.startsWith("http")) {
+    return <img src={src} alt={alt} className={`shrink-0 rounded-xl object-cover ${className}`} />;
+  }
+  return <span className="shrink-0 text-3xl">{src}</span>;
+}
+
 export function SukoonLogo({ light = false }: { light?: boolean }) {
   return (
     <Link to="/" className="flex items-center gap-2">

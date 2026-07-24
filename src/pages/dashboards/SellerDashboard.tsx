@@ -7,7 +7,7 @@ import { ACCOUNTS, USERS } from "../../engine/constants";
 import { balanceOf } from "../../engine/ledger";
 import { formatPKR } from "../../engine/fees";
 import { agoLabel, formatSimDate, remainingLabel } from "../../lib/format";
-import { StatePill } from "../../components/ui";
+import { ProductThumb, StatePill } from "../../components/ui";
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import { GlassCard, Kpi, SectionHeader } from "../../components/dashboard/ui";
 import IntegrationsSection from "../../components/dashboard/IntegrationsSection";
@@ -19,7 +19,7 @@ function SellerOrderRow({ order }: { order: Order }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 px-3 py-3 last:border-0">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{order.productImage}</span>
+        <ProductThumb src={order.productImage} alt={order.productName} className="h-10 w-10" />
         <div>
           <p className="text-sm font-bold text-white">
             {order.id} · {order.productName}
@@ -96,7 +96,7 @@ function PendingCartsSection() {
           {pendingCarts.map((c) => (
             <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 px-3 py-3 last:border-0">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{c.items[0]?.image}</span>
+                <ProductThumb src={c.items[0]?.image ?? ""} alt={c.items[0]?.name ?? ""} className="h-10 w-10" />
                 <div>
                   <p className="text-sm font-bold text-white">
                     {c.id} · {c.items.map((i) => `${i.name} ×${i.qty}`).join(", ")}

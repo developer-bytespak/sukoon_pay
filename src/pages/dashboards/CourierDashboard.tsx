@@ -3,7 +3,7 @@ import { MapPin, MapPinOff, Package, Truck } from "lucide-react";
 import { useStore } from "../../engine/store";
 import type { Order, ProofType } from "../../engine/types";
 import { formatPKR } from "../../engine/fees";
-import { StatePill } from "../../components/ui";
+import { ProductThumb, StatePill } from "../../components/ui";
 import DashboardShell from "../../components/dashboard/DashboardShell";
 import { GlassCard, Kpi, SectionHeader } from "../../components/dashboard/ui";
 
@@ -33,7 +33,7 @@ function ShipmentCard({ order }: { order: Order }) {
     <GlassCard>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{order.productImage}</span>
+          <ProductThumb src={order.productImage} alt={order.productName} />
           <div>
             <p className="font-bold text-white">
               {order.id} · {order.productName}

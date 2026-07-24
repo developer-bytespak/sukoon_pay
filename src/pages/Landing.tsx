@@ -106,7 +106,7 @@ function Hero() {
           className="mt-9 flex flex-wrap items-center justify-center gap-3"
         >
           <Link
-            to="/bazaar"
+            to="/store"
             className="group flex items-center gap-2 rounded-2xl bg-emerald-500 px-6 py-3.5 font-bold text-stone-950 shadow-xl shadow-emerald-500/30 transition hover:bg-emerald-400"
           >
             <Store size={18} />
@@ -553,7 +553,7 @@ function FinalCta() {
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
-              to="/bazaar"
+              to="/store"
               className="group flex items-center gap-2 rounded-2xl bg-emerald-500 px-7 py-4 font-bold text-stone-950 shadow-xl shadow-emerald-500/30 transition hover:bg-emerald-400"
             >
               <Store size={18} /> Try the demo store
@@ -588,7 +588,7 @@ function Footer() {
           <a href="#how" className="transition hover:text-white/80">How it works</a>
           <a href="/#sharia" className="transition hover:text-white/80">Sharia &amp; fees</a>
           <a href="/#integrations" className="transition hover:text-white/80">Integrations</a>
-          <Link to="/bazaar" className="transition hover:text-white/80">Demo store</Link>
+          <Link to="/store" className="transition hover:text-white/80">Demo store</Link>
           <Link to="/login" className="transition hover:text-white/80">Log in</Link>
         </nav>
         <p className="text-xs text-white/30">سکون · peace of mind · demonstration prototype, fake money</p>
