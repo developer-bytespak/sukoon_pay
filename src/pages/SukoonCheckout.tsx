@@ -10,11 +10,12 @@ import FeeBreakdown from "../components/FeeBreakdown";
 
 export default function SukoonCheckout() {
   const navigate = useNavigate();
-  const { pendingCheckout, pay, login } = useStore();
+  const { pendingCheckout, pay, login, apiError } = useStore();
   const [step, setStep] = useState<"id" | "2fa" | "summary">("id");
   const [consumerId, setConsumerId] = useState<string>(USERS.buyer.consumerId);
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   if (!pendingCheckout) {
     return (
@@ -27,10 +28,14 @@ export default function SukoonCheckout() {
     );
   }
 
-  const confirmPay = () => {
+  const confirmPay = async () => {
+    // The real thing: POST /api/checkout + the mock rail's paid-callback fund
+    // escrow in the Java money core before the buyer lands on the dashboard.
+    setPaying(true);
     login("buyer");
-    pay();
-    navigate("/buyer-dashboard");
+    const reference = await pay();
+    setPaying(false);
+    if (reference) navigate("/buyer-dashboard");
   };
 
   return (
@@ -129,11 +134,17 @@ export default function SukoonCheckout() {
                 </span>
               </div>
               <button
-                onClick={confirmPay}
-                className="w-full rounded-lg bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500"
+                onClick={() => void confirmPay()}
+                disabled={paying}
+                className="w-full rounded-lg bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60"
               >
-                Confirm &amp; pay into escrow
+                {paying ? "Holding funds in escrow…" : "Confirm & pay into escrow"}
               </button>
+              {apiError && !paying && (
+                <p className="text-xs font-semibold text-rose-600">
+                  Payment failed: {apiError}. Is the backend running on port 8080?
+                </p>
+              )}
             </motion.div>
           )}
         </Card>

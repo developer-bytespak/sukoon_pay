@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { FastForward, Info, RotateCcw, Settings, Store, X } from "lucide-react";
+import { FastForward, RotateCcw, Settings, Store, X } from "lucide-react";
 import { useStore } from "../../engine/store";
-import { SCENARIOS } from "../../engine/scenarios";
 import { DAY_MS, HOUR_MS } from "../../engine/constants";
 import { formatSimDate } from "../../lib/format";
 import type { Role } from "../../engine/types";
@@ -19,7 +18,7 @@ const JUMPS = [
 export default function DemoGear() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { clock, activeScenario, scenarioHint, currentRole, advanceClock, loadScenario, resetDemo, login } = useStore();
+  const { clock, currentRole, advanceClock, resetDemo, login } = useStore();
 
   return (
     <div className="relative">
@@ -51,29 +50,10 @@ export default function DemoGear() {
               </button>
             </div>
 
-            <label className="mb-3 block">
-              <span className="mb-1 block text-xs text-white/45">Scenario storyline</span>
-              <select
-                data-testid="demo-scenario"
-                value={activeScenario ?? ""}
-                onChange={(e) => e.target.value && loadScenario(Number(e.target.value))}
-                className="w-full rounded-lg border border-white/10 bg-stone-800 px-2 py-1.5 text-xs text-white"
-              >
-                <option value="">— pick a storyline —</option>
-                {SCENARIOS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.id}. {s.title} — {s.tagline}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {scenarioHint && (
-              <p className="mb-3 flex items-start gap-1.5 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-2 text-[11px] leading-relaxed text-emerald-200">
-                <Info size={12} className="mt-0.5 shrink-0" />
-                {scenarioHint}
-              </p>
-            )}
+            <p className="mb-3 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.06] px-2.5 py-2 text-[11px] leading-relaxed text-emerald-200/80">
+              Live mode: every order runs through the real Sukoon Pay money core (double-entry ledger, escrow
+              state machine, signed webhooks). Clock jumps fire the backend&apos;s actual timers.
+            </p>
 
             <div className="mb-3">
               <span className="mb-1 flex items-center gap-1.5 text-xs text-white/45">
@@ -85,7 +65,7 @@ export default function DemoGear() {
                   <button
                     key={j.label}
                     data-testid={j.id}
-                    onClick={() => advanceClock(j.ms)}
+                    onClick={() => void advanceClock(j.ms)}
                     className="rounded-lg bg-white/[0.06] py-1.5 text-xs font-bold text-white/70 transition hover:bg-white/10 hover:text-white"
                   >
                     {j.label}
@@ -125,7 +105,7 @@ export default function DemoGear() {
               <button
                 data-testid="demo-reset"
                 onClick={() => {
-                  resetDemo();
+                  void resetDemo();
                   navigate("/");
                 }}
                 className="flex items-center gap-1.5 text-xs font-bold text-rose-300 transition hover:text-rose-200"

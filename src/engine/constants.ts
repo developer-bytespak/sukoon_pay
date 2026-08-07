@@ -17,6 +17,17 @@ export const USERS = {
   adminB: { id: "admin-b", name: "Hamza (Adjudicator B)" },
 } as const;
 
+// The backend's seeded identities (DemoSeed.java) — the stub-auth headers the
+// API expects. Fixed UUIDs, identical every run.
+export const BACKEND_IDS = {
+  buyer: "00000000-0000-0000-0000-00000000b001",
+  seller: "00000000-0000-0000-0000-00000000f001",
+  courier: "00000000-0000-0000-0000-00000000c001",
+  adminA: "00000000-0000-0000-0000-00000000ad01",
+  adminB: "00000000-0000-0000-0000-00000000ad02",
+  merchant: "00000000-0000-0000-0000-00000000e001",
+} as const;
+
 export interface CatalogProduct {
   id: string;
   name: string;
@@ -48,9 +59,11 @@ export const WEBHOOK_TOPICS: Record<"payment" | "carts", Record<"shopify" | "woo
 
 export const WEBHOOK_EVENT_CAP = 20;
 
+// Real backend chart-of-account codes (the ledger entries now come from the
+// Java money core, so the codes match its accounts table).
 export const ACCOUNTS = {
-  buyerWallet: "buyer_wallet",
-  sellerWallet: "seller_wallet",
+  buyerWallet: "buyer_wallet_pool",
+  sellerWallet: "seller_wallet_pool",
   platformFee: "platform_fee",
   purification: "purification",
   escrow: (orderId: string) => `escrow:${orderId}`,

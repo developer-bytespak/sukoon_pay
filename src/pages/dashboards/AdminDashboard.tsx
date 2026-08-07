@@ -5,6 +5,7 @@ import { useStore } from "../../engine/store";
 import type { Order } from "../../engine/types";
 import { ACCOUNTS, ADJUDICATION_FEE, BUYER_STARTING_BALANCE, USERS } from "../../engine/constants";
 import { balanceOf } from "../../engine/ledger";
+import { buyerWalletBalance } from "../../engine/api";
 import { formatPKR } from "../../engine/fees";
 import { StatePill } from "../../components/ui";
 import StateMachineDiagram from "../../components/StateMachineDiagram";
@@ -132,8 +133,8 @@ export default function AdminDashboard() {
   const accounts = [
     { name: "platform_fee", balance: balanceOf(orders, ACCOUNTS.platformFee), note: "Wakala + verification fees earned" },
     { name: "purification", balance: balanceOf(orders, ACCOUNTS.purification), note: "Charity account for any non-halal income" },
-    { name: "seller_wallet", balance: releasedTotal, note: "Merchant withdrawable balance" },
-    { name: "buyer_wallet", balance: balanceOf(orders, ACCOUNTS.buyerWallet, BUYER_STARTING_BALANCE), note: "Consumer wallet" },
+    { name: "seller_wallet_pool", balance: releasedTotal, note: "Merchant withdrawable balance" },
+    { name: "buyer_wallet", balance: buyerWalletBalance(orders, BUYER_STARTING_BALANCE), note: "Consumer wallet" },
   ];
 
   return (
@@ -231,7 +232,7 @@ export default function AdminDashboard() {
             </div>
             <StateMachineDiagram order={selected} tone="dark" />
             <h4 className="mb-1 mt-5 text-xs font-bold uppercase tracking-wide text-white/35">
-              Double-entry ledger (fake money, real arithmetic)
+              Double-entry ledger (live from the money core)
             </h4>
             <LedgerTable entries={selected.ledgerEntries} tone="dark" />
             <details className="mt-4">

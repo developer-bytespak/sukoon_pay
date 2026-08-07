@@ -1,7 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { CloudOff, LogOut } from "lucide-react";
 import { useStore } from "../../engine/store";
 import type { Role } from "../../engine/types";
 import { ROLE_CONFIGS } from "./roles";
@@ -30,7 +31,17 @@ export default function DashboardShell({
 }) {
   const navigate = useNavigate();
   const logout = useStore((s) => s.logout);
+  const refresh = useStore((s) => s.refresh);
+  const apiError = useStore((s) => s.apiError);
   const cfg = ROLE_CONFIGS[role];
+
+  // Server truth: fetch on mount, then poll — other roles' actions (courier
+  // webhooks, admin decisions, backend timers) appear without a reload.
+  useEffect(() => {
+    void refresh();
+    const interval = setInterval(() => void refresh(), 5_000);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   return (
     <div className="noise relative min-h-screen overflow-x-clip bg-stone-950 text-white">
@@ -79,6 +90,12 @@ export default function DashboardShell({
       </header>
 
       <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        {apiError && (
+          <p className="mb-4 flex items-center gap-2 rounded-xl border border-rose-400/25 bg-rose-400/10 px-4 py-2.5 text-xs font-semibold text-rose-200">
+            <CloudOff size={14} className="shrink-0" />
+            Backend unreachable or the last action failed: {apiError} — is the API running on port 8080?
+          </p>
+        )}
         <div className="mb-6">
           <h1 className="font-display text-2xl font-bold text-white">{title}</h1>
           {subtitle && <p className="mt-0.5 text-sm text-white/40">{subtitle}</p>}

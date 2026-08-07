@@ -69,7 +69,8 @@ export interface Dispute {
 }
 
 export interface Order {
-  id: string;
+  id: string; // human reference, e.g. "SP-10300"
+  uuid: string; // backend order id (UUID) — used for API calls
   productName: string; // display summary, e.g. "Street Runner Sneakers +2 more"
   productImage: string; // image path (older persisted orders may hold an emoji)
   items?: CartItem[];

@@ -146,7 +146,9 @@ function PendingCartsSection() {
 export default function SellerDashboard() {
   const orders = useStore((s) => s.orders ?? []);
   const pendingCarts = useStore((s) => s.pendingCarts ?? []);
+  const requestPayout = useStore((s) => s.requestPayout);
   const [withdrawn, setWithdrawn] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const activeEscrow = orders
     .filter((o) => ["HELD_IN_ESCROW", "SHIPPED", "INSPECTION_WINDOW", "DISPUTED"].includes(o.state))
@@ -194,15 +196,22 @@ export default function SellerDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {withdrawn && released > 0 && (
-              <p className="text-xs font-semibold text-emerald-300">✓ Transfer of {formatPKR(released)} initiated (mock)</p>
+            {withdrawn && (
+              <p className="text-xs font-semibold text-emerald-300">✓ Payout initiated via the payment rail</p>
             )}
             <button
-              onClick={() => setWithdrawn(true)}
-              disabled={released <= 0}
+              onClick={async () => {
+                // A real payout: the ledger debits the seller pool + trust bank,
+                // then the (mock) rail carries it out — idempotent, verified IBAN.
+                setWithdrawing(true);
+                const ok = await requestPayout(released);
+                setWithdrawing(false);
+                if (ok) setWithdrawn(true);
+              }}
+              disabled={released <= 0 || withdrawing}
               className="rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-stone-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Withdraw to bank
+              {withdrawing ? "Transferring…" : "Withdraw to bank"}
             </button>
           </div>
         </GlassCard>
