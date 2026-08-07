@@ -6,6 +6,7 @@ import { useStore } from "../../engine/store";
 import type { DisputeReason, Order } from "../../engine/types";
 import { ACCOUNTS, BUYER_STARTING_BALANCE, USERS } from "../../engine/constants";
 import { balanceOf } from "../../engine/ledger";
+import { buyerWalletBalance } from "../../engine/api";
 import { formatPKR } from "../../engine/fees";
 import { formatSimDate, remainingLabel } from "../../lib/format";
 import { ProductThumb, StatePill } from "../../components/ui";
@@ -190,7 +191,10 @@ function BuyerOrderCard({ order }: { order: Order }) {
 
 export default function BuyerDashboard() {
   const orders = useStore((s) => s.orders ?? []);
-  const balance = balanceOf(orders, ACCOUNTS.buyerWallet, BUYER_STARTING_BALANCE);
+  // Wallet = opening balance − escrow payments + refunds, derived from the
+  // server-truth orders (the backend models pay-ins as external cash into the
+  // trust account, so the demo wallet is a client-side view).
+  const balance = buyerWalletBalance(orders, BUYER_STARTING_BALANCE);
   const active = orders.filter((o) => ACTIVE_STATES.includes(o.state));
   const history = orders.filter((o) => !ACTIVE_STATES.includes(o.state));
   const inEscrow = active.reduce((sum, o) => sum + balanceOf([o], ACCOUNTS.escrow(o.id)), 0);
